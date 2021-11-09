@@ -1,9 +1,9 @@
 # Timelog
 
-* PROJECT NAME
-* YOUR NAME
-* STUDENT_ID
-* SUPERVISOR NAME
+* Can spatial features be used to enhance table data extraction effectively? 
+* Vedant .R. Dube
+* 2367329d
+* Dr Jesus Rodriguez Perez
 
 ## Guidance
 
