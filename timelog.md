@@ -162,21 +162,3 @@
 ### 9 Nov 2021
 
 * *2 hours* Added all the my timelogs from OneNote to timelog.md 
-
-
-
-
-
-
-
-
-### 19 Oct 2019
-
-* *4 hours* Read the project guidance notes
-* *0.5 hour* Created GitLab repository and cloned the cookiecutter for the projects
-* *1 hour* Modified dissertation template, compiled  
-
-## 20 Oct 2019
-
-* *1 hour* meeting with supervisor
-* *2 hours* writing initial version of test harness
