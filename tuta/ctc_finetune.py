@@ -548,6 +548,8 @@ def PipelineTesting(args, model, dataset_couples, no_decay=['bias', 'gamma', 'be
     total_sep_loss, total_tok_loss = 0.0, 0.0
     best_result = [0.0] * args.num_ctc_type
     early_stopping_count = 0
+
+    print("TESTING HAS STARTED")
     for iepoch in range(args.epochs_num):
         print(len(dataset_couples))
         trainset, testset = dataset_couples[iepoch % args.dataset_num]
