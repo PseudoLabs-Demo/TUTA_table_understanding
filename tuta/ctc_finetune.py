@@ -657,7 +657,7 @@ def main():
 
 
     # Train or only Evaluate -> Made by Vedant
-    parser.add_argument("--test", type=boolean, default=False, help="Whether to only evaluate the model or first train then test")
+    parser.add_argument("--test", type=bool, default=False, help="Whether to only evaluate the model or first train then test")
 
     args = parser.parse_args()
 
