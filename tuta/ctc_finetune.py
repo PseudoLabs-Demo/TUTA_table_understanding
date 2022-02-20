@@ -505,6 +505,8 @@ def PipelineTesting(args, model, dataset_couples, no_decay=['bias', 'gamma', 'be
                     token_order=token_order, pos_row=pos_row, pos_col=pos_col, pos_top=pos_top, pos_left=pos_left,
                     format_vec=fmt_vec.float(), indicator=ind, ctc_label=ctc
                 )
+                print("Predicted \t{}".format(sep_pred.tolist()))
+                print("True: \t{}".format(sep_gold.tolist()))
                 for spd, sgd in zip(sep_pred.tolist(), sep_gold.tolist()):
                     sep_confusion_matrix[spd][sgd] += 1
                 for tpd, tgd in zip(tok_pred.tolist(), tok_gold.tolist()):
