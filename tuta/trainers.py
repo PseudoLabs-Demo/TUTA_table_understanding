@@ -18,7 +18,7 @@ def train_base(args, gpu_id, rank, loader, model, optimizer, scheduler):
     total_tok_loss, total_tok_crt, total_tok_cnt = 0., 0., 0.
     total_tcr_loss, total_tcr_crt, total_tcr_cnt = 0., 0., 0.
     total_rand_num, total_rand_den = 0., 0.
-    
+
     steps = 1
     total_steps = args.total_steps
     loader_iter = iter(loader)
@@ -27,13 +27,13 @@ def train_base(args, gpu_id, rank, loader, model, optimizer, scheduler):
         if steps == total_steps + 1:
             break
         token_id, num_mag, num_pre, num_top, num_low, \
-        token_order, pos_top, pos_left, format_vec, indicator, \
-        mlm_label, clc_label, tcr_label = next(loader_iter)
+            token_order, pos_top, pos_left, format_vec, indicator, \
+            mlm_label, clc_label, tcr_label = next(loader_iter)
 
         while (clc_label.size()[0] == 0) or (torch.min(clc_label) >= 0) or (torch.max(mlm_label) == -1):
             token_id, num_mag, num_pre, num_top, num_low, \
-            token_order, pos_top, pos_left, format_vec, indicator, \
-            mlm_label, clc_label, tcr_label = next(loader_iter)
+                token_order, pos_top, pos_left, format_vec, indicator, \
+                mlm_label, clc_label, tcr_label = next(loader_iter)
 
         model.zero_grad()
         if gpu_id is not None:
@@ -52,11 +52,11 @@ def train_base(args, gpu_id, rank, loader, model, optimizer, scheduler):
             mlm_label = mlm_label.cuda(gpu_id)
             clc_label = clc_label.cuda(gpu_id)
             tcr_label = tcr_label.cuda(gpu_id)
-        
+
         # forward
         mlm_triple, sep_triple, tok_triple, tcr_triple = model(
-            token_id, num_mag, num_pre, num_top, num_low, 
-            token_order, pos_top, pos_left, format_vec, indicator, 
+            token_id, num_mag, num_pre, num_top, num_low,
+            token_order, pos_top, pos_left, format_vec, indicator,
             mlm_label, clc_label, tcr_label
         )
         mlm_loss, mlm_crt, mlm_cnt = mlm_triple
@@ -92,14 +92,16 @@ def train_base(args, gpu_id, rank, loader, model, optimizer, scheduler):
         total_tcr_crt += tcr_crt.item()
         total_tcr_cnt += tcr_cnt.item()
 
-        total_loss = total_mlm_loss + (total_sep_loss + total_tok_loss) * args.clc_weight + total_tcr_loss
-        
-        if steps % args.report_steps == 0  and (not args.dist_train or (args.dist_train and rank == 0)):
+        total_loss = total_mlm_loss + \
+            (total_sep_loss + total_tok_loss) * \
+            args.clc_weight + total_tcr_loss
+
+        if steps % args.report_steps == 0 and (not args.dist_train or (args.dist_train and rank == 0)):
             elapsed = time.time() - start_time
             done_tokens = \
                 args.batch_size * token_id.size(1) * args.report_steps * args.world_size \
                 if args.dist_train \
-                else args.batch_size * token_id.size(1) * args.report_steps 
+                else args.batch_size * token_id.size(1) * args.report_steps
             print("| {:8d}/{:8d} steps"
                   "| {:8.2f} tokens/s"
                   "| total_loss {:7.2f}"
@@ -112,18 +114,18 @@ def train_base(args, gpu_id, rank, loader, model, optimizer, scheduler):
                   "| rand_acc {:.3f}"
                   "| tcr_loss {:7.2f}"
                   "| tcr_acc {:.3f}".format(
-                    steps, total_steps, 
-                    done_tokens / elapsed, 
-                    total_loss / args.report_steps, 
-                    total_mlm_loss / args.report_steps, 
-                    total_mlm_crt / total_mlm_cnt, 
-                    total_sep_loss / args.report_steps, 
-                    total_sep_crt / total_sep_cnt, 
-                    total_tok_loss / args.report_steps, 
-                    total_tok_crt / total_tok_cnt, 
-                    total_rand_num / total_rand_den, 
-                    total_tcr_loss / args.report_steps, 
-                    total_tcr_crt / total_tcr_cnt))   
+                      steps, total_steps,
+                      done_tokens / elapsed,
+                      total_loss / args.report_steps,
+                      total_mlm_loss / args.report_steps,
+                      total_mlm_crt / total_mlm_cnt,
+                      total_sep_loss / args.report_steps,
+                      total_sep_crt / total_sep_cnt,
+                      total_tok_loss / args.report_steps,
+                      total_tok_crt / total_tok_cnt,
+                      total_rand_num / total_rand_den,
+                      total_tcr_loss / args.report_steps,
+                      total_tcr_crt / total_tcr_cnt))
             total_loss = 0.
             total_mlm_loss, total_mlm_crt, total_mlm_cnt = 0., 0., 0.
             total_sep_loss, total_sep_crt, total_sep_cnt = 0., 0., 0.
@@ -145,7 +147,7 @@ def train_tuta(args, gpu_id, rank, loader, model, optimizer, scheduler):
     total_tok_loss, total_tok_crt, total_tok_cnt = 0., 0., 0.
     total_tcr_loss, total_tcr_crt, total_tcr_cnt = 0., 0., 0.
     total_rand_num, total_rand_den = 0., 0.
-    
+
     steps = 1
     total_steps = args.total_steps
     loader_iter = iter(loader)
@@ -154,13 +156,13 @@ def train_tuta(args, gpu_id, rank, loader, model, optimizer, scheduler):
         if steps == total_steps + 1:
             break
         token_id, num_mag, num_pre, num_top, num_low, \
-        token_order, pos_row, pos_col, pos_top, pos_left, format_vec, indicator, \
-        mlm_label, clc_label, tcr_label = next(loader_iter)
+            token_order, pos_row, pos_col, pos_top, pos_left, format_vec, indicator, \
+            mlm_label, clc_label, tcr_label = next(loader_iter)
 
         while (clc_label.size()[0] == 0) or (torch.min(clc_label) >= 0) or (torch.max(mlm_label) == -1):
             token_id, num_mag, num_pre, num_top, num_low, \
-            token_order, pos_row, pos_col, pos_top, pos_left, format_vec, indicator, \
-            mlm_label, clc_label, tcr_label = next(loader_iter)
+                token_order, pos_row, pos_col, pos_top, pos_left, format_vec, indicator, \
+                mlm_label, clc_label, tcr_label = next(loader_iter)
 
         model.zero_grad()
         if gpu_id is not None:
@@ -183,11 +185,10 @@ def train_tuta(args, gpu_id, rank, loader, model, optimizer, scheduler):
             clc_label = clc_label.cuda(gpu_id)
             tcr_label = tcr_label.cuda(gpu_id)
 
-        
         # forward
         mlm_triple, sep_triple, tok_triple, tcr_triple = model(
-            token_id, num_mag, num_pre, num_top, num_low, 
-            token_order, pos_row, pos_col, pos_top, pos_left, format_vec, indicator, 
+            token_id, num_mag, num_pre, num_top, num_low,
+            token_order, pos_row, pos_col, pos_top, pos_left, format_vec, indicator,
             mlm_label, clc_label, tcr_label
         )
         mlm_loss, mlm_crt, mlm_cnt = mlm_triple
@@ -223,14 +224,16 @@ def train_tuta(args, gpu_id, rank, loader, model, optimizer, scheduler):
         total_tcr_crt += tcr_crt.item()
         total_tcr_cnt += tcr_cnt.item()
 
-        total_loss = total_mlm_loss + (total_sep_loss + total_tok_loss) * args.clc_weight + total_tcr_loss
-        
-        if steps % args.report_steps == 0  and (not args.dist_train or (args.dist_train and rank == 0)):
+        total_loss = total_mlm_loss + \
+            (total_sep_loss + total_tok_loss) * \
+            args.clc_weight + total_tcr_loss
+
+        if steps % args.report_steps == 0 and (not args.dist_train or (args.dist_train and rank == 0)):
             elapsed = time.time() - start_time
             done_tokens = \
                 args.batch_size * token_id.size(1) * args.report_steps * args.world_size \
                 if args.dist_train \
-                else args.batch_size * token_id.size(1) * args.report_steps 
+                else args.batch_size * token_id.size(1) * args.report_steps
             print("| {:8d}/{:8d} steps"
                   "| {:8.2f} tokens/s"
                   "| total_loss {:7.2f}"
@@ -243,18 +246,18 @@ def train_tuta(args, gpu_id, rank, loader, model, optimizer, scheduler):
                   "| rand_acc {:.3f}"
                   "| tcr_loss {:7.2f}"
                   "| tcr_acc {:.3f}".format(
-                    steps, total_steps, 
-                    done_tokens / elapsed, 
-                    total_loss / args.report_steps, 
-                    total_mlm_loss / args.report_steps, 
-                    total_mlm_crt / total_mlm_cnt, 
-                    total_sep_loss / args.report_steps, 
-                    total_sep_crt / total_sep_cnt, 
-                    total_tok_loss / args.report_steps, 
-                    total_tok_crt / total_tok_cnt, 
-                    total_rand_num / total_rand_den, 
-                    total_tcr_loss / args.report_steps, 
-                    total_tcr_crt / total_tcr_cnt))   
+                      steps, total_steps,
+                      done_tokens / elapsed,
+                      total_loss / args.report_steps,
+                      total_mlm_loss / args.report_steps,
+                      total_mlm_crt / total_mlm_cnt,
+                      total_sep_loss / args.report_steps,
+                      total_sep_crt / total_sep_cnt,
+                      total_tok_loss / args.report_steps,
+                      total_tok_crt / total_tok_cnt,
+                      total_rand_num / total_rand_den,
+                      total_tcr_loss / args.report_steps,
+                      total_tcr_crt / total_tcr_cnt))
             total_loss = 0.
             total_mlm_loss, total_mlm_crt, total_mlm_cnt = 0., 0., 0.
             total_sep_loss, total_sep_crt, total_sep_cnt = 0., 0., 0.
@@ -263,13 +266,15 @@ def train_tuta(args, gpu_id, rank, loader, model, optimizer, scheduler):
             total_rand_num, total_rand_den = 0., 0.
             start_time = time.time()
         if steps % args.save_checkpoint_steps == 0 and (not args.dist_train or (args.dist_train and rank == 0)):
+            print("saving model")
             save_model(model, args.output_model_path + "-" + str(steps))
         steps += 1
 
+    print("the model wasn't saved")
 
 
 TRAINERS = {
-    "base": train_base, 
-    "tuta": train_tuta, 
-    "tuta_explicit": train_tuta, 
+    "base": train_base,
+    "tuta": train_tuta,
+    "tuta_explicit": train_tuta,
 }

@@ -480,6 +480,118 @@ def Pipeline(args, model, dataset_couples, no_decay=['bias', 'gamma', 'beta']):
     return result
 
 
+# Just Testing
+def PipelineTesting(args, model, dataset_couples, no_decay=['bias', 'gamma', 'beta']):
+
+# ------------------------------------------------Evaluation Function----------------------------------------------------------------------------
+    def evaluate(args, testset):
+        print("Start Evaluation with {} Instances: ".format(len(testset)))
+        model.eval()
+        sep_confusion_matrix = [[0 for _ in range(args.num_ctc_type)] for _ in range(args.num_ctc_type)]
+        tok_confusion_matrix = [[0 for _ in range(args.num_ctc_type)] for _ in range(args.num_ctc_type)]
+        for i, tensors in enumerate(
+                ut.load_dataset_batch_withpad(
+                    dataset=testset,
+                    batch_size=args.batch_size,
+                    defaults=[0, 11, 11, 11, 11, 0, 256, 256, args.default_tree_position, args.default_tree_position,
+                              args.default_format, 0, -1],
+                    device_id=args.device_id
+                )
+        ):
+            with torch.no_grad():
+                token_id, num_mag, num_pre, num_top, num_low, token_order, pos_row, pos_col, pos_top, pos_left, fmt_vec, ind, ctc = tensors
+                (_, sep_pred, sep_gold), (_, tok_pred, tok_gold) = model(
+                    token_id=token_id, num_mag=num_mag, num_pre=num_pre, num_top=num_top, num_low=num_low,
+                    token_order=token_order, pos_row=pos_row, pos_col=pos_col, pos_top=pos_top, pos_left=pos_left,
+                    format_vec=fmt_vec.float(), indicator=ind, ctc_label=ctc
+                )
+                for spd, sgd in zip(sep_pred.tolist(), sep_gold.tolist()):
+                    sep_confusion_matrix[spd][sgd] += 1
+                for tpd, tgd in zip(tok_pred.tolist(), tok_gold.tolist()):
+                    tok_confusion_matrix[tpd][tgd] += 1
+
+        # compute confusion matrix
+        sep_precision, sep_recall = [], []
+        tok_precision, tok_recall = [], []
+        for iclass in range(args.num_ctc_type):
+            class_sep_precision = sep_confusion_matrix[iclass][iclass] / (sum(sep_confusion_matrix[iclass]) + 1e-6)
+            sep_precision.append(class_sep_precision)
+            class_sep_recall = sep_confusion_matrix[iclass][iclass] / (
+                        sum([line[iclass] for line in sep_confusion_matrix]) + 1e-6)
+            sep_recall.append(class_sep_recall)
+            class_tok_precision = tok_confusion_matrix[iclass][iclass] / (sum(tok_confusion_matrix[iclass]) + 1e-6)
+            tok_precision.append(class_tok_precision)
+            class_tok_recall = tok_confusion_matrix[iclass][iclass] / (
+                        sum([line[iclass] for line in tok_confusion_matrix]) + 1e-6)
+            tok_recall.append(class_tok_recall)
+
+        sep_f1 = [(2 * p * r) / (p + r + 1e-6) for p, r in zip(sep_precision, sep_recall)]
+        print("[SEP] f1: ", [round(value, 3) for value in sep_f1])
+
+        tok_f1 = [(2 * p * r) / (p + r + 1e-6) for p, r in zip(tok_precision, tok_recall)]
+        print("[TOK] f1: ", [round(value, 3) for value in tok_f1], sum(tok_f1) / 6)
+        return [max(s, t) for s, t in zip(sep_f1, tok_f1)]
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+    # Do Training
+    param_optimizer = list(model.named_parameters())
+
+    print("tuning all of the model parameters (backbone + ctc_head)")
+    optimizer_grouped_parameters = [
+        {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay_rate': 0.01},
+        {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay_rate': 0.0}
+    ]
+    optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, correct_bias=False)
+
+    total_sep_loss, total_tok_loss = 0.0, 0.0
+    best_result = [0.0] * args.num_ctc_type
+    early_stopping_count = 0
+    for iepoch in range(args.epochs_num):
+        print(len(dataset_couples))
+        trainset, testset = dataset_couples[iepoch % args.dataset_num]
+
+        # random.shuffle(trainset)
+        # print("Start Training", iepoch, args.report_steps)
+        # model.train()
+        # for ii, tensors in enumerate(
+        #         ut.load_dataset_batch_withpad(
+        #             dataset=trainset,
+        #             batch_size=args.batch_size,
+        #             defaults=[0, 11, 11, 11, 11, 0, 256, 256, args.default_tree_position, args.default_tree_position,
+        #                       args.default_format, 0, -1],
+        #             device_id=args.device_id
+        #         )
+        # ):
+        #     model.zero_grad()
+        #     token_id, num_mag, num_pre, num_top, num_low, token_order, pos_row, pos_col, pos_top, pos_left, fmt_vec, ind, ctc = tensors
+        #     (sep_loss, _, _), (tok_loss, _, _) = model(
+        #         token_id=token_id, num_mag=num_mag, num_pre=num_pre, num_top=num_top, num_low=num_low,
+        #         token_order=token_order, pos_row=pos_row, pos_col=pos_col, pos_top=pos_top, pos_left=pos_left,
+        #         format_vec=fmt_vec.float(), indicator=ind, ctc_label=ctc
+        #     )
+        #     loss = sep_loss * args.sep_weight + tok_loss * (1. - args.sep_weight)
+        #     total_sep_loss += sep_loss.item()
+        #     total_tok_loss += tok_loss.item()
+        #     if (ii + 1) % args.report_steps == 0:
+        #         print("Epoch id: {}, Training steps: {}, Avg loss: [SEP] {:.3f}, [TOK] {:.3f}". \
+        #               format(iepoch, ii + 1, total_sep_loss / args.report_steps, total_tok_loss / args.report_steps))
+        #         total_sep_loss, total_tok_loss = 0.0, 0.0
+        #     loss.backward()
+        #     optimizer.step()
+
+        result = evaluate(args, testset)
+        # if sum(result) >= sum(best_result):
+        #     best_result = result
+        #     ut.save_model(model, args.output_model_path)
+        # else:
+        #     early_stopping_count += 1
+        # if early_stopping_count > args.early_stopping_bound:
+        #     break
+
+    return result
+
 
 # %% Main Procedure
 def main():
@@ -542,6 +654,11 @@ def main():
     parser.add_argument("--dataset_num", type=int, default=1, help="Times of distinct data sampling.")
     parser.add_argument("--early_stopping_bound", type=int, default=100)
     parser.add_argument("--device_id", type=int, default=None, help="Designated GPU id if not None.")
+
+
+    # Train or only Evaluate -> Made by Vedant
+    parser.add_argument("--test", type=boolean, default=False, help="Whether to only evaluate the model or first train then test")
+
     args = parser.parse_args()
 
     args.node_degree = [int(degree) for degree in args.node_degree.split(',')]
@@ -567,7 +684,15 @@ def main():
         print("\nGo On to Couple #{}".format(iset+1))
         print("fold_length:", len(dataset_couples))
         ut.init_tuta_loose(model=model, tuta_path=args.pretrained_model_path)
-        f1_list = Pipeline(args, model, fold_couples)
+
+        if args.test:
+            f1_list = PipelineTesting(args, model, fold_couples)
+        else:
+            # This trains and evaluates the function -> evaluate(...)
+            f1_list = Pipeline(args, model, fold_couples)
+
+
+
         print("F1 List: ", [round(fl, 3) for fl in f1_list], "\n\n")
         folds_results.append(f1_list)
     
