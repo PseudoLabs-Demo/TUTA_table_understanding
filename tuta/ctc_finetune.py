@@ -480,12 +480,17 @@ def Pipeline(args, model, dataset_couples, no_decay=['bias', 'gamma', 'beta']):
     return result
 
 
-# Just Testing
+# Aim -> Single value prediction
 def PipelineTesting(args, model, dataset_couples, no_decay=['bias', 'gamma', 'beta']):
 
 # ------------------------------------------------Evaluation Function----------------------------------------------------------------------------
     def evaluate(args, testset):
+
         print("Start Evaluation with {} Instances: ".format(len(testset)))
+        print("This is the testset ")
+        print(testset, "\n")
+
+        
         model.eval()
         sep_confusion_matrix = [[0 for _ in range(args.num_ctc_type)] for _ in range(args.num_ctc_type)]
         tok_confusion_matrix = [[0 for _ in range(args.num_ctc_type)] for _ in range(args.num_ctc_type)]
